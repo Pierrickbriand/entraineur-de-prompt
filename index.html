@@ -56,6 +56,7 @@
     flex-wrap:wrap;
   }
   .mode-tab{
+    font-family:inherit;
     padding:9px 16px;
     border-radius:20px;
     border:1px solid var(--line);
@@ -64,6 +65,10 @@
     font-size:0.88rem;
     font-weight:600;
     cursor:pointer;
+  }
+  .mode-tab:focus-visible, button:focus-visible, select:focus-visible, a:focus-visible{
+    outline:3px solid var(--blue);
+    outline-offset:2px;
   }
   .mode-tab.active{
     background:var(--blue);
@@ -457,10 +462,10 @@
   <p id="modeIntro">Rédigez votre consigne pour une IA générative, faites-la analyser, corrigez-la, et recommencez jusqu'à obtenir un prompt prêt à l'emploi.</p>
 </header>
 
-<div class="mode-tabs">
-  <div class="mode-tab active" data-mode="texte" onclick="changerMode('texte')">Prompt texte</div>
-  <div class="mode-tab" data-mode="image" onclick="changerMode('image')">Prompt image</div>
-  <div class="mode-tab" data-mode="video" onclick="changerMode('video')">Prompt vidéo</div>
+<div class="mode-tabs" role="group" aria-label="Type de prompt">
+  <button type="button" class="mode-tab active" data-mode="texte" aria-pressed="true" onclick="changerMode('texte')">Prompt texte</button>
+  <button type="button" class="mode-tab" data-mode="image" aria-pressed="false" onclick="changerMode('image')">Prompt image</button>
+  <button type="button" class="mode-tab" data-mode="video" aria-pressed="false" onclick="changerMode('video')">Prompt vidéo</button>
 </div>
 
 <div class="wrap">
@@ -475,12 +480,12 @@
 
     <textarea id="promptInput" placeholder="Écrivez ici la consigne que vous donneriez à Claude, ChatGPT ou Gemini…"></textarea>
     <div class="meta-row">
-      <span id="wordCount">0 mot</span>
-      <span id="attemptCount">Essai n° 1</span>
+      <span id="wordCount">0&nbsp;mot</span>
+      <span id="attemptCount" aria-live="polite">Essai n°&nbsp;1</span>
     </div>
     <div class="actions">
-      <button class="btn-primary" onclick="analyser()">Analyser mon prompt</button>
-      <button class="btn-ghost" onclick="reinitialiser()">Réinitialiser</button>
+      <button type="button" class="btn-primary" onclick="analyser()">Analyser mon prompt</button>
+      <button type="button" class="btn-ghost" onclick="reinitialiser()">Réinitialiser</button>
     </div>
     <label class="toggle-line">
       <input type="checkbox" id="toggleExemples" checked onchange="rafraichirAffichage()">
@@ -497,7 +502,7 @@
     <div class="saved-history">
       <div class="saved-history-header">
         <h3>Mes prompts sauvegardés (<span id="modeLabelSaved">texte</span>)</h3>
-        <button class="btn-ghost btn-small" onclick="viderHistoriqueSauvegarde()">Vider</button>
+        <button type="button" class="btn-ghost btn-small" onclick="viderHistoriqueSauvegarde()">Vider</button>
       </div>
       <div id="savedHistoryList"></div>
     </div>
@@ -506,8 +511,8 @@
   <!-- Colonne droite : résultats -->
   <div class="card">
     <h2>Analyse</h2>
-    <div id="resultZone">
-      <div class="empty-state">Rédigez un prompt à gauche, puis cliquez sur « Analyser mon prompt » pour voir le détail.</div>
+    <div id="resultZone" aria-live="polite">
+      <div class="empty-state">Rédigez un prompt à gauche, puis cliquez sur «&nbsp;Analyser mon prompt&nbsp;» pour voir le détail.</div>
     </div>
 
     <div class="history" id="historyBlock" style="display:none;">
@@ -524,6 +529,35 @@
 let attempts = [];
 let toggleExemples = true;
 let modeActuel = 'texte';
+
+// Seuil unique : au-delà, la consigne est jugée « prête » (message et bloc de copie)
+const SEUIL_PRET = 0.85;
+const NBSP = ' ';
+
+// Construit une règle de détection qui reconnaît aussi les mots accentués
+// (le \b classique de JavaScript ignore é, è, à…)
+function R(source){
+  return new RegExp('(?<![\\p{L}\\p{N}_])(?:' + source + ')(?![\\p{L}\\p{N}_])', 'iu');
+}
+
+// Uniformise le texte avant analyse : apostrophes courbes, espaces insécables
+function normaliser(t){
+  return t.replace(/[’‘ʼ]/g, "'").replace(/[  ]/g, ' ');
+}
+
+// Empêche le texte saisi d'être interprété comme du code HTML à l'affichage
+function esc(t){
+  return String(t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function nbMots(t){
+  return t.trim().split(/\s+/).filter(Boolean).length;
+}
 
 const MODE_INTRO = {
   texte: "Rédigez votre consigne pour une IA générative de texte (Claude, ChatGPT, Gemini…), faites-la analyser, corrigez-la, et recommencez jusqu'à obtenir un prompt prêt à l'emploi.",
@@ -545,158 +579,172 @@ const MODE_RAPPEL = {
 
 const MODE_LABEL = { texte: "texte", image: "image", video: "vidéo" };
 
+// Règles partagées
+const RE_VERBE = R(/rédige[rz]?|écri[st]|écrire|écrivez|crée[rz]?|génère[rz]?|générer|résume[rz]?|analyse[rz]?|compare[rz]?|explique[rz]?|tradui[st]|traduire|traduisez|corrige[rz]?|décri[st]|décrire|décrivez|développe[rz]?|identifie[rz]?|évalue[rz]?|propose[rz]?|construi[st]|construire|construisez|liste[rz]?|imagine[rz]?|synthétise[rz]?|reformule[rz]?|présente[rz]?|élabore[rz]?|prépare[rz]?|conçoi[st]|concevoir|concevez|formule[rz]?|classe[rz]?|structure[rz]?|recommande[rz]?|suggère[rz]?|suggérer|suggérez/.source);
+const RE_VAGUE_TEXTE = R(/quelque chose|un truc|des trucs|n'importe quoi|un peu|peu importe|etc\.?/.source);
+const RE_VAGUE_VISUEL = R(/quelque chose|un truc|des trucs|n'importe quoi|un peu|peu importe|joli(e)?s?|beau|beaux|belle(s)?/.source);
+const RE_AMBIANCE = /ambiance|atmosphère|mystérieu(x|se|ses)|joyeu(x|se|ses)|dramatiques?|mélancoli(e|que|ques)|épiques?|paisibles?|calmes?|serein(e)?s?|sombres?|onirique(s)?|futuristes?/.source;
+const RE_LUMIERE = /lumières?|éclairage|éclairée?s?|contre-jour|golden hour|heure dorée|néons?|clair-obscur|ombres?|rayons?/.source;
+
 const CRITERES = {
 
   texte: [
     {
+      id: 'role', label: "Rôle attribué à l'IA", points: 3,
+      test: (t) => R(/tu es|vous êtes|agis (comme|en tant que|en)|agissez (comme|en tant que|en)|joue(z)? le rôle|endosse(z)? le rôle|incarne(z)?|mets-toi dans la peau|mettez-vous dans la peau|dans le rôle d(e|')|en tant qu(e|')|comporte-toi comme|imagine que tu es|imaginez que vous êtes/.source).test(t),
+      tip: "Dites à l'IA quel rôle jouer&nbsp;: expert, formateur, rédacteur, conseiller… Elle adapte alors son vocabulaire et son niveau d'exigence.",
+      exemple: "« Tu es un responsable marketing expérimenté dans la cosmétique bio. »"
+    },
+    {
       id: 'verbe', label: "Verbe d'action explicite", points: 3,
-      test: (t) => /^(rédige[rz]?|écri[st]|crée[rz]?|génère[rz]?|résume[rz]?|analyse[rz]?|compare[rz]?|explique[rz]?|traduis|tradui[st]|corrige[rz]?|décri[st]|développe[rz]?|identifie[rz]?|évalue[rz]?|propose[rz]?|construi[st]|liste[rz]?|imagine[rz]?|synthétise[rz]?|reformule[rz]?)/i.test(t.trim()) || /\b(rédige[rz]?|écri[st]|crée[rz]?|génère[rz]?|résume[rz]?|analyse[rz]?|compare[rz]?|explique[rz]?|traduis|corrige[rz]?|décri[st]|développe[rz]?|identifie[rz]?|évalue[rz]?|propose[rz]?|construi[st]|liste[rz]?|imagine[rz]?|synthétise[rz]?|reformule[rz]?)\b/i.test(t),
-      tip: "Commencez par un verbe d'action clair (« rédige », « analyse », « compare », « résume »…) pour que l'IA sache tout de suite ce qu'elle doit produire.",
-      exemple: "Plutôt que « le climat » → « Explique en 200 mots les causes du réchauffement climatique »."
+      test: (t) => RE_VERBE.test(t),
+      tip: "Utilisez un verbe d'action clair («&nbsp;rédige&nbsp;», «&nbsp;analyse&nbsp;», «&nbsp;compare&nbsp;», «&nbsp;résume&nbsp;»…) pour que l'IA sache tout de suite ce qu'elle doit produire.",
+      exemple: "Plutôt que «&nbsp;le climat&nbsp;» → «&nbsp;Explique en 200&nbsp;mots les causes du réchauffement climatique&nbsp;»."
     },
     {
       id: 'longueur', label: "Longueur suffisante", points: 2,
-      test: (t) => t.trim().split(/\s+/).filter(Boolean).length >= 15,
-      tip: "Un prompt trop court oblige l'IA à deviner beaucoup d'éléments. Visez au moins 15 mots.",
-      exemple: "« Écris un poème » → « Écris un poème de 8 vers sur l'automne, dans un style mélancolique, pour un public adulte »."
+      test: (t) => nbMots(t) >= 15,
+      tip: "Un prompt trop court oblige l'IA à deviner beaucoup d'éléments. Visez au moins 15&nbsp;mots.",
+      exemple: "«&nbsp;Écris un poème&nbsp;» → «&nbsp;Écris un poème de 8&nbsp;vers sur l'automne, dans un style mélancolique, pour un public adulte&nbsp;»."
     },
     {
       id: 'contexte', label: "Contexte ou situation précisée", points: 3,
-      test: (t) => /\b(contexte|je suis|nous sommes|dans le cadre de|pour un(e)?|actuellement|situation|il s'agit de)\b/i.test(t) || t.split(/[.!?]/).filter(s => s.trim().length > 3).length >= 2,
-      tip: "Donnez le contexte&nbsp;: qui vous êtes, dans quelle situation, pour quel projet.",
-      exemple: "« Je suis formateur en marketing digital et je prépare un atelier pour des étudiants de BTS… »"
+      test: (t) => R(/contexte|je suis|nous sommes|je travaille|nous travaillons|dans le cadre d(e|')|actuellement|situation|il s'agit d(e|')|mon entreprise|notre entreprise|ma société|notre société|mon projet|notre projet|mon objectif|notre objectif|l'objectif est|afin d(e|')|dans le but d(e|')|je prépare|nous préparons|je dois|nous devons/.source).test(t),
+      tip: "Donnez le contexte&nbsp;: qui vous êtes, dans quelle situation, pour quel projet ou quel objectif.",
+      exemple: "«&nbsp;Je suis formateur en marketing digital et je prépare un atelier pour des étudiants de BTS…&nbsp;»"
     },
     {
       id: 'format', label: "Format de sortie attendu", points: 3,
-      test: (t) => /\b(format|sous forme de|tableau|liste|paragraphe(s)?|mots|lignes|sections?|plan|e-?mail|article|résumé|puces?|slides?|diapositives?|tweet|post)\b/i.test(t),
+      test: (t) => R(/format|sous (la )?forme d(e|')|tableaux?|listes?|paragraphes?|mots|lignes|sections?|plan|e-?mails?|courriels?|articles?|résumé|puces?|slides?|diapositives?|tweet|posts?|publication|fiche|script|questionnaire|grille/.source).test(t),
       tip: "Précisez la forme attendue&nbsp;: tableau, liste à puces, e-mail, paragraphe, nombre de mots…",
-      exemple: "« Présente le résultat sous forme de tableau à trois colonnes »."
+      exemple: "«&nbsp;Présente le résultat sous forme de tableau à trois colonnes&nbsp;»."
     },
     {
       id: 'public', label: "Public ou destinataire précisé", points: 2,
-      test: (t) => /\b(pour (des|les|un|une)|destiné(e)?s? à|niveau|débutant(e)?s?|expert(e)?s?|enfants?|professionnel(le)?s?|client(e)?s?|étudiant(e)?s?|public)\b/i.test(t),
+      test: (t) => R(/pour (des|les|un|une|mes|nos|mon|ma)|destiné(e)?s? (à|aux)|adressée?s? (à|aux)|niveau|débutant(e)?s?|expert(e)?s?|enfants?|professionnel(le)?s?|client(e)?s?|étudiant(e)?s?|élèves?|apprenant(e)?s?|public|lecteurs?|lectrices?|cibles?|prospects?/.source).test(t),
       tip: "Indiquez à qui s'adresse le résultat&nbsp;: débutants, experts, enfants, clients…",
-      exemple: "« … destiné à des étudiants de première année, sans connaissances préalables »."
+      exemple: "«&nbsp;… destiné à des étudiants de première année, sans connaissances préalables&nbsp;»."
     },
     {
       id: 'ton', label: "Ton ou style souhaité", points: 2,
-      test: (t) => /\b(ton|style|formel(le)?|informel(le)?|professionnel(le)?|humoristique|académique|chaleureux|neutre|sérieux|convivial|décontracté)\b/i.test(t),
+      test: (t) => R(/(un|le|ce|au|d'un|du) ton|ton (formel|informel|neutre|professionnel|chaleureux|direct|léger|sérieux)|style|registre|formel(le)?|informel(le)?|professionnel(le)?|humoristique|académique|chaleureux|chaleureuse|neutre|sérieux|sérieuse|convivial(e)?|décontracté(e)?|pédagogique|bienveillant(e)?|direct(e)?|sobre|persuasi(f|ve)|engageant(e)?/.source).test(t),
       tip: "Précisez le ton attendu&nbsp;: formel, chaleureux, humoristique, académique…",
-      exemple: "« … avec un ton chaleureux et accessible, sans jargon technique »."
+      exemple: "«&nbsp;… avec un ton chaleureux et accessible, sans jargon technique&nbsp;»."
     },
     {
       id: 'contrainte', label: "Contrainte quantifiée", points: 3,
-      test: (t) => /\d/.test(t),
-      tip: "Ajoutez un chiffre précis&nbsp;: nombre de mots, de lignes, d'exemples, de minutes…",
-      exemple: "« … en 150 mots maximum » ou « … en trois points »."
+      test: (t) => R(/(\d+|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|douze|quinze|vingt|cent) ?(mots?|lignes?|phrases?|points?|exemples?|idées?|paragraphes?|minutes?|secondes?|caractères?|colonnes?|questions?|slides?|diapositives?|propositions?|parties|sections?|étapes?|arguments?|critères?|pages?|vers|puces?|titres?|%)/.source).test(t)
+        || R(/maximum|minimum|au plus|au moins|pas plus d(e|')|moins d(e|')|plus d(e|')/.source).test(t) && /\d/.test(t),
+      tip: "Ajoutez une quantité précise&nbsp;: nombre de mots, de lignes, d'exemples, de minutes…",
+      exemple: "«&nbsp;… en 150&nbsp;mots maximum&nbsp;» ou «&nbsp;… en trois points&nbsp;»."
     },
     {
       id: 'vague', label: "Absence de formulations vagues", points: 2,
-      test: (t) => !/\b(quelque chose|un truc|des trucs|n'importe quoi|un peu|peu importe|etc\.?)\b/i.test(t),
-      tip: "Évitez les formulations floues comme « quelque chose sur… » ou « un peu de… » qui n'orientent pas l'IA.",
-      exemple: "Remplacez « écris quelque chose sur le café » par « écris un texte de 100 mots sur l'histoire du café en Éthiopie »."
+      test: (t) => !RE_VAGUE_TEXTE.test(t),
+      tip: "Évitez les formulations floues comme «&nbsp;quelque chose sur…&nbsp;» ou «&nbsp;un peu de…&nbsp;» qui n'orientent pas l'IA.",
+      exemple: "Remplacez «&nbsp;écris quelque chose sur le café&nbsp;» par «&nbsp;écris un texte de 100&nbsp;mots sur l'histoire du café en Éthiopie&nbsp;»."
     }
   ],
 
   image: [
     {
       id: 'sujet', label: "Sujet principal détaillé", points: 3,
-      test: (t) => t.trim().split(/\s+/).filter(Boolean).length >= 12,
+      test: (t) => nbMots(t) >= 12,
       tip: "Décrivez le sujet précisément&nbsp;: qui ou quoi, à quoi il ressemble, ce qu'il fait ou porte.",
-      exemple: "« Un chat » → « Un chat roux aux yeux verts, assis sur le rebord d'une fenêtre »."
+      exemple: "«&nbsp;Un chat&nbsp;» → «&nbsp;Un chat roux aux yeux verts, assis sur le rebord d'une fenêtre&nbsp;»."
     },
     {
       id: 'style', label: "Style visuel précisé", points: 3,
-      test: (t) => /\b(photo(graphie)?|réaliste|hyperréaliste|illustration|aquarelle|peinture|3d|rendu|cartoon|anim[ée]|cinématographique|néon|pixel ?art|minimaliste|vintage|rétro|dessin|croquis|à la manière de|style de)\b/i.test(t),
+      test: (t) => R(/photo(graphie)?s?|réalistes?|hyperréalistes?|illustrations?|aquarelle|peinture|3d|rendu|cartoon|animée?s?|cinématographiques?|néons?|pixel ?art|minimalistes?|vintage|rétro|dessin|croquis|à la manière d(e|')|style d(e|')|style/.source).test(t),
       tip: "Précisez le style visuel&nbsp;: photo réaliste, aquarelle, illustration, rendu 3D, style cartoon…",
-      exemple: "« … dans un style aquarelle délicat » ou « … rendu 3D hyperréaliste »."
+      exemple: "«&nbsp;… dans un style aquarelle délicat&nbsp;» ou «&nbsp;… rendu 3D hyperréaliste&nbsp;»."
     },
     {
       id: 'cadrage', label: "Cadrage ou composition précisé", points: 3,
-      test: (t) => /\b(plan (large|serré|rapproché|américain)|gros plan|vue (aérienne|de dessus|de face|de profil)|portrait|plein pied|cadrage|angle|contre-plongée|plongée|premier plan|arrière-plan)\b/i.test(t),
+      test: (t) => R(/plan (large|serré|rapproché|américain|moyen|d'ensemble)|gros plan|très gros plan|vue (aérienne|de dessus|de face|de profil|plongeante)|portrait|plein pied|en pied|cadrage|angle|contre-plongée|plongée|premier plan|arrière-plan|centré(e)?|composition|règle des tiers/.source).test(t),
       tip: "Indiquez le cadrage&nbsp;: gros plan, plan large, vue aérienne, portrait, contre-plongée…",
-      exemple: "« Gros plan sur le visage, vue légèrement en contre-plongée »."
+      exemple: "«&nbsp;Gros plan sur le visage, vue légèrement en contre-plongée&nbsp;»."
     },
     {
       id: 'lumiere', label: "Éclairage ou ambiance lumineuse", points: 2,
-      test: (t) => /\b(lumière|éclairage|contre-jour|golden hour|heure dorée|néon|clair-obscur|ombre(s)?|rayons?)\b/i.test(t),
+      test: (t) => R(RE_LUMIERE).test(t),
       tip: "Décrivez la lumière&nbsp;: douce, dorée, contre-jour, néon, clair-obscur…",
-      exemple: "« … éclairé par une lumière douce de fin d'après-midi »."
+      exemple: "«&nbsp;… éclairé par une lumière douce de fin d'après-midi&nbsp;»."
     },
     {
       id: 'couleurs', label: "Couleurs ou palette précisées", points: 2,
-      test: (t) => /\b(couleur(s)?|palette|tons? (chauds?|froids?|pastel)|noir et blanc|monochrome|saturé(e)?|désaturé(e)?|bleu(e)?|rouge|vert(e)?|jaune|orange|violet(te)?|rose)\b/i.test(t),
+      test: (t) => R(/couleurs?|palette|tons? (chauds?|froids?|pastels?)|pastels?|noir et blanc|monochrome|saturée?s?|désaturée?s?|bleu(e)?s?|rouges?|vert(e)?s?|jaunes?|orange|violet(te)?s?|roses?|dorée?s?|argentée?s?|turquoise|beiges?|blanc(he)?s?|noir(e)?s?/.source).test(t),
       tip: "Précisez la palette de couleurs souhaitée&nbsp;: tons chauds, pastel, noir et blanc, dominante bleue…",
-      exemple: "« … palette de tons pastel, dominante bleu et rose »."
+      exemple: "«&nbsp;… palette de tons pastel, dominante bleu et rose&nbsp;»."
     },
     {
       id: 'technique', label: "Détails techniques (ratio, résolution…)", points: 3,
-      test: (t) => /\b(ratio|format|résolution|4k|8k|hd|16:9|9:16|1:1|4:5|objectif|focale|\d+\s?mm|grand angle|macro)\b/i.test(t),
+      test: (t) => R(/ratio|format|résolution|4k|8k|hd|16:9|9:16|1:1|4:5|3:2|2:3|objectif|focale|\d+ ?mm|grand angle|macro|profondeur de champ|bokeh/.source).test(t),
       tip: "Ajoutez un détail technique&nbsp;: ratio (16:9, 1:1), résolution, type d'objectif…",
-      exemple: "« … format carré 1:1, rendu haute résolution »."
+      exemple: "«&nbsp;… format carré 1:1, rendu haute résolution&nbsp;»."
     },
     {
       id: 'ambiance', label: "Ambiance ou émotion souhaitée", points: 2,
-      test: (t) => /\b(ambiance|atmosphère|mystérieux(se)?|joyeux(se)?|dramatique|mélancoli[qe]|épique|paisible|calme|serein(e)?|sombre|onirique|futuriste)\b/i.test(t),
+      test: (t) => R(RE_AMBIANCE).test(t),
       tip: "Indiquez l'ambiance ou l'émotion recherchée&nbsp;: paisible, dramatique, mystérieuse, onirique…",
-      exemple: "« … ambiance mystérieuse et onirique »."
+      exemple: "«&nbsp;… ambiance mystérieuse et onirique&nbsp;»."
     },
     {
       id: 'vague', label: "Absence de formulations vagues", points: 2,
-      test: (t) => !/\b(quelque chose|un truc|des trucs|n'importe quoi|un peu|peu importe|joli|jolie|beau|belle)\b/i.test(t),
-      tip: "Évitez les termes flous comme « joli » ou « beau », qui ne décrivent rien de concret pour l'IA.",
-      exemple: "Remplacez « une jolie fleur » par « une pivoine rose aux pétales délicats, gouttes de rosée »."
+      test: (t) => !RE_VAGUE_VISUEL.test(t),
+      tip: "Évitez les termes flous comme «&nbsp;joli&nbsp;» ou «&nbsp;beau&nbsp;», qui ne décrivent rien de concret pour l'IA.",
+      exemple: "Remplacez «&nbsp;une jolie fleur&nbsp;» par «&nbsp;une pivoine rose aux pétales délicats, gouttes de rosée&nbsp;»."
     }
   ],
 
   video: [
     {
       id: 'sujet', label: "Sujet et action principale décrits", points: 3,
-      test: (t) => t.trim().split(/\s+/).filter(Boolean).length >= 12,
+      test: (t) => nbMots(t) >= 12,
       tip: "Décrivez le sujet ET l'action&nbsp;: qui ou quoi, et ce qu'il se passe dans la scène.",
-      exemple: "« Une voiture » → « Une voiture de sport rouge roulant le long d'une route côtière »."
+      exemple: "«&nbsp;Une voiture&nbsp;» → «&nbsp;Une voiture de sport rouge roulant le long d'une route côtière&nbsp;»."
     },
     {
       id: 'style', label: "Style visuel ou cinématographique précisé", points: 3,
-      test: (t) => /\b(cinématographique|réaliste|hyperréaliste|animation|3d|dessin ?animé|documentaire|clip|found footage|style de|à la manière de|noir et blanc)\b/i.test(t),
+      test: (t) => R(/cinématographiques?|réalistes?|hyperréalistes?|animation|animée?s?|3d|dessin ?animé|documentaire|clip|found footage|style d(e|')|style|à la manière d(e|')|noir et blanc|grain argentique|vintage|rétro/.source).test(t),
       tip: "Précisez le style&nbsp;: cinématographique, documentaire, animation 3D, style clip…",
-      exemple: "« … dans un style cinématographique, grain argentique »."
+      exemple: "«&nbsp;… dans un style cinématographique, grain argentique&nbsp;»."
     },
     {
       id: 'camera', label: "Mouvement de caméra précisé", points: 3,
-      test: (t) => /\b(travelling|zoom|dézoom|panoramique|plan fixe|plan[- ]séquence|caméra (à l'épaule|aérienne|drone)|rotation|vue subjective|steadicam|slow motion|ralenti|accéléré)\b/i.test(t),
+      test: (t) => R(/travelling|zoom|dézoom|panoramique|plan fixe|plan[- ]séquence|caméra (à l'épaule|aérienne|embarquée|subjective|fixe)|drone|rotation|vue subjective|steadicam|slow motion|ralenti|accéléré|suit le personnage|caméra qui suit|mouvement de caméra/.source).test(t),
       tip: "Indiquez le mouvement de caméra&nbsp;: travelling, zoom, plan fixe, vue aérienne, ralenti…",
-      exemple: "« Travelling latéral qui suit le personnage, léger ralenti »."
+      exemple: "«&nbsp;Travelling latéral qui suit le personnage, léger ralenti&nbsp;»."
     },
     {
       id: 'lumiere', label: "Éclairage ou ambiance lumineuse", points: 2,
-      test: (t) => /\b(lumière|éclairage|contre-jour|golden hour|heure dorée|néon|clair-obscur|ombre(s)?|coucher de soleil|lever de soleil)\b/i.test(t),
+      test: (t) => R(RE_LUMIERE + '|coucher de soleil|coucher du soleil|lever de soleil|lever du soleil|nuit|crépuscule|aube').test(t),
       tip: "Décrivez la lumière de la scène&nbsp;: golden hour, néon, contre-jour, nuit…",
-      exemple: "« … tourné au coucher du soleil, lumière dorée rasante »."
+      exemple: "«&nbsp;… tourné au coucher du soleil, lumière dorée rasante&nbsp;»."
     },
     {
       id: 'duree', label: "Durée ou rythme précisé", points: 2,
-      test: (t) => /\d+\s?(s|sec|secondes?|min|minutes?)\b/i.test(t) || /\b(plan court|plan long|rythme (lent|rapide|soutenu))\b/i.test(t),
-      tip: "Précisez une durée ou un rythme&nbsp;: « 5 secondes », « rythme lent », « plan court »…",
-      exemple: "« … séquence de 6 secondes, rythme lent et contemplatif »."
+      test: (t) => R(/(\d+|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|quinze|vingt|trente) ?(s|sec|secondes?|min|minutes?)|plan court|plan long|rythme (lent|rapide|soutenu)|durée/.source).test(t),
+      tip: "Précisez une durée ou un rythme&nbsp;: «&nbsp;5&nbsp;secondes&nbsp;», «&nbsp;rythme lent&nbsp;», «&nbsp;plan court&nbsp;»…",
+      exemple: "«&nbsp;… séquence de 6&nbsp;secondes, rythme lent et contemplatif&nbsp;»."
     },
     {
       id: 'technique', label: "Détails techniques (ratio, format…)", points: 2,
-      test: (t) => /\b(ratio|format|résolution|4k|8k|hd|16:9|9:16|1:1|fps|images par seconde|24 ?fps|30 ?fps|60 ?fps)\b/i.test(t),
+      test: (t) => R(/ratio|format|résolution|4k|8k|hd|16:9|9:16|1:1|fps|images par seconde|\d+ ?fps/.source).test(t),
       tip: "Ajoutez un détail technique&nbsp;: ratio (16:9, 9:16), résolution, nombre d'images par seconde…",
-      exemple: "« … format vertical 9:16, 24 images par seconde »."
+      exemple: "«&nbsp;… format vertical 9:16, 24&nbsp;images par seconde&nbsp;»."
     },
     {
       id: 'ambiance', label: "Ambiance ou émotion souhaitée", points: 2,
-      test: (t) => /\b(ambiance|atmosphère|mystérieux(se)?|joyeux(se)?|dramatique|mélancoli[qe]|épique|paisible|calme|serein(e)?|sombre|onirique|futuriste|tendu(e)?)\b/i.test(t),
+      test: (t) => R(RE_AMBIANCE + '|tendu(e)?s?').test(t),
       tip: "Indiquez l'ambiance ou l'émotion recherchée&nbsp;: tendue, épique, paisible, onirique…",
-      exemple: "« … ambiance épique et tendue, montée en intensité »."
+      exemple: "«&nbsp;… ambiance épique et tendue, montée en intensité&nbsp;»."
     },
     {
       id: 'vague', label: "Absence de formulations vagues", points: 3,
-      test: (t) => !/\b(quelque chose|un truc|des trucs|n'importe quoi|un peu|peu importe|joli|jolie|beau|belle)\b/i.test(t),
+      test: (t) => !RE_VAGUE_VISUEL.test(t),
       tip: "Évitez les termes flous&nbsp;: décrivez précisément l'action et le décor plutôt que de rester général.",
-      exemple: "Remplacez « une belle scène de nature » par « une forêt de sapins sous la brume matinale, un cerf traverse le cadre »."
+      exemple: "Remplacez «&nbsp;une belle scène de nature&nbsp;» par «&nbsp;une forêt de sapins sous la brume matinale, un cerf traverse le cadre&nbsp;»."
     }
   ]
 };
@@ -734,7 +782,7 @@ const DEFIS = {
     {label:"Illustration réseaux sociaux", text:"Rédigez un prompt pour générer une illustration destinée à un post Instagram sur le télétravail."}
   ],
   video: [
-    {label:"Publicité produit", text:"Rédigez un prompt pour générer une courte vidéo publicitaire (5 secondes) mettant en scène une paire de baskets."},
+    {label:"Publicité produit", text:"Rédigez un prompt pour générer une courte vidéo publicitaire (5&nbsp;secondes) mettant en scène une paire de baskets."},
     {label:"Ambiance nature", text:"Rédigez un prompt pour générer une vidéo immersive d'une forêt sous la pluie, avec mouvement de caméra."},
     {label:"Scène urbaine", text:"Rédigez un prompt pour générer une vidéo d'une rue animée la nuit, néons et reflets sur la chaussée."},
     {label:"Portrait animé", text:"Rédigez un prompt pour générer une vidéo d'un personnage qui se retourne lentement vers la caméra, ambiance mystérieuse."}
@@ -743,8 +791,8 @@ const DEFIS = {
 
 const EXEMPLES = {
   texte: [
-    {faible:"Parle-moi du marketing", fort:"Explique en 200 mots, pour des étudiants de première année, les quatre piliers du mix marketing (produit, prix, distribution, communication), avec un exemple concret pour chacun, dans un style pédagogique et accessible."},
-    {faible:"Écris un email", fort:"Rédige un e-mail professionnel de 150 mots pour relancer un client qui n'a pas répondu à un devis envoyé il y a une semaine, sur un ton courtois mais ferme."}
+    {faible:"Parle-moi du marketing", fort:"Tu es formateur en marketing. Explique en 200 mots, pour des étudiants de première année, les quatre piliers du mix marketing (produit, prix, distribution, communication), avec un exemple concret pour chacun, dans un style pédagogique et accessible."},
+    {faible:"Écris un email", fort:"Tu es chargé de clientèle dans une agence de communication. Rédige un e-mail professionnel de 150 mots pour relancer un client qui n'a pas répondu à un devis envoyé il y a une semaine, sur un ton courtois mais ferme."}
   ],
   image: [
     {faible:"Un chat mignon", fort:"Portrait rapproché d'un chaton roux aux yeux verts, assis sur un rebord de fenêtre, lumière douce du matin, style photo réaliste, format carré 1:1, ambiance paisible."},
@@ -756,19 +804,26 @@ const EXEMPLES = {
   ]
 };
 
+const MSG_VIDE = '<div class="empty-state">Rédigez un prompt à gauche, puis cliquez sur «&nbsp;Analyser mon prompt&nbsp;» pour voir le détail.</div>';
+
 function totalPoints(mode){
   return CRITERES[mode].reduce((s,c) => s + c.points, 0);
 }
 
+function evaluer(texte, mode){
+  const t = normaliser(texte);
+  return CRITERES[mode].map(c => ({...c, ok: c.test(t)}));
+}
+
 const promptInput = document.getElementById('promptInput');
 promptInput.addEventListener('input', () => {
-  const words = promptInput.value.trim().split(/\s+/).filter(Boolean).length;
-  document.getElementById('wordCount').textContent = words + (words > 1 ? ' mots' : ' mot');
+  const words = nbMots(promptInput.value);
+  document.getElementById('wordCount').textContent = words + NBSP + (words > 1 ? 'mots' : 'mot');
 });
 
 function populateDefis(mode){
   const sel = document.getElementById('defiSelect');
-  sel.innerHTML = '<option value="">— Écriture libre —</option>';
+  sel.innerHTML = '<option value="">Écriture libre</option>';
   DEFIS[mode].forEach((d,i) => {
     const opt = document.createElement('option');
     opt.value = i;
@@ -804,8 +859,8 @@ function renderExamples(){
   let html = '';
   list.forEach(ex => {
     html += '<div class="example-item">';
-    html += '<div class="example-faible"><b>Faible&nbsp;:</b> « '+ex.faible+' »</div>';
-    html += '<div class="example-fort"><b>Amélioré&nbsp;:</b> « '+ex.fort+' »</div>';
+    html += '<div class="example-faible"><b>Faible&nbsp;:</b> «&nbsp;'+esc(ex.faible)+'&nbsp;»</div>';
+    html += '<div class="example-fort"><b>Amélioré&nbsp;:</b> «&nbsp;'+esc(ex.fort)+'&nbsp;»</div>';
     html += '</div>';
   });
   document.getElementById('examplesPanel').innerHTML = html;
@@ -818,7 +873,8 @@ function storageKey(mode){
 function loadSavedHistory(mode){
   try{
     const raw = localStorage.getItem(storageKey(mode));
-    return raw ? JSON.parse(raw) : [];
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
   }catch(e){ return []; }
 }
 
@@ -840,12 +896,13 @@ function renderSavedHistory(mode){
   }
   let html = '';
   hist.forEach((h, i) => {
-    const preview = h.prompt.length > 70 ? h.prompt.slice(0,70) + '…' : h.prompt;
+    const txt = String(h.prompt || '');
+    const preview = txt.length > 70 ? txt.slice(0,70) + '…' : txt;
     const d = new Date(h.date);
-    const dateStr = d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    const dateStr = d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}).replace(':', '&nbsp;h&nbsp;');
     html += '<div class="saved-item">';
-    html += '<div class="saved-item-text"><span class="saved-score">'+h.score+'/'+h.maxScore+'</span> · '+dateStr+'<br><span class="saved-preview">« '+preview+' »</span></div>';
-    html += '<button class="btn-ghost btn-small" onclick="chargerPromptSauvegarde('+i+')">Charger</button>';
+    html += '<div class="saved-item-text"><span class="saved-score">'+esc(h.score)+'/'+esc(h.maxScore)+'</span> · '+dateStr+'<br><span class="saved-preview">«&nbsp;'+esc(preview)+'&nbsp;»</span></div>';
+    html += '<button type="button" class="btn-ghost btn-small" onclick="chargerPromptSauvegarde('+i+')">Charger</button>';
     html += '</div>';
   });
   container.innerHTML = html;
@@ -853,24 +910,37 @@ function renderSavedHistory(mode){
 
 function chargerPromptSauvegarde(i){
   const hist = loadSavedHistory(modeActuel);
-  if (hist[i]){
-    promptInput.value = hist[i].prompt;
-    promptInput.dispatchEvent(new Event('input'));
-    window.scrollTo({top:0, behavior:'smooth'});
+  if (!hist[i]) return;
+  if (promptInput.value.trim() && promptInput.value !== hist[i].prompt){
+    if (!confirm('Remplacer la consigne en cours par celle-ci' + NBSP + '?')) return;
   }
+  promptInput.value = hist[i].prompt;
+  promptInput.dispatchEvent(new Event('input'));
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 function viderHistoriqueSauvegarde(){
-  if (confirm('Supprimer tous les prompts sauvegardés pour ce mode ?')){
-    localStorage.removeItem(storageKey(modeActuel));
+  if (confirm('Supprimer tous les prompts sauvegardés pour ce mode sur cet ordinateur' + NBSP + '?')){
+    try{ localStorage.removeItem(storageKey(modeActuel)); }catch(e){}
     renderSavedHistory(modeActuel);
   }
 }
 
+function travailEnCours(){
+  return promptInput.value.trim() !== '' || attempts.length > 0;
+}
+
 function changerMode(mode){
+  if (mode === modeActuel) return;
+  if (travailEnCours()){
+    const ok = confirm('Changer de mode efface la consigne en cours et la progression de cette séance (les prompts sauvegardés restent disponibles). Continuer' + NBSP + '?');
+    if (!ok) return;
+  }
   modeActuel = mode;
   document.querySelectorAll('.mode-tab').forEach(el => {
-    el.classList.toggle('active', el.dataset.mode === mode);
+    const actif = el.dataset.mode === mode;
+    el.classList.toggle('active', actif);
+    el.setAttribute('aria-pressed', actif ? 'true' : 'false');
   });
   document.getElementById('modeIntro').textContent = MODE_INTRO[mode];
   document.getElementById('promptInput').placeholder = MODE_PLACEHOLDER[mode];
@@ -878,7 +948,7 @@ function changerMode(mode){
   populateDefis(mode);
   document.getElementById('examplesPanel').style.display = 'none';
   renderSavedHistory(mode);
-  reinitialiser();
+  remettreAZero();
 }
 
 function rafraichirAffichage(){
@@ -888,17 +958,17 @@ function rafraichirAffichage(){
 
 function analyser(){
   const texte = promptInput.value;
-  if (texte.trim().split(/\s+/).filter(Boolean).length < 2){
+  if (nbMots(texte) < 2){
     document.getElementById('resultZone').innerHTML = '<div class="empty-state">Écrivez d\'abord un prompt avant de lancer l\'analyse.</div>';
     return;
   }
 
-  const crits = CRITERES[modeActuel].map(c => ({...c, ok: c.test(texte)}));
+  const crits = evaluer(texte, modeActuel);
   const score = crits.reduce((s,c) => s + (c.ok ? c.points : 0), 0);
   const maxScore = totalPoints(modeActuel);
 
   attempts.push({n: attempts.length + 1, score, prompt: texte});
-  document.getElementById('attemptCount').textContent = 'Essai n° ' + (attempts.length + 1);
+  document.getElementById('attemptCount').textContent = 'Essai n°' + NBSP + (attempts.length + 1);
 
   saveAttemptToStorage(modeActuel, {date: new Date().toISOString(), prompt: texte, score, maxScore});
 
@@ -907,9 +977,11 @@ function analyser(){
 }
 
 function afficherResultats(){
-  const texteActuel = promptInput.value;
+  if (attempts.length === 0) return;
+  // On affiche toujours le résultat du dernier texte analysé, pas le texte en cours de modification
+  const texteAnalyse = attempts[attempts.length - 1].prompt;
   const maxScore = totalPoints(modeActuel);
-  const crits = CRITERES[modeActuel].map(c => ({...c, ok: c.test(texteActuel)}));
+  const crits = evaluer(texteAnalyse, modeActuel);
   const score = crits.reduce((s,c) => s + (c.ok ? c.points : 0), 0);
 
   let couleur, msg, sousMsg;
@@ -920,23 +992,23 @@ function afficherResultats(){
   } else if (ratio <= 0.6){
     couleur = 'var(--amber)';
     msg = 'Bien engagé'; sousMsg = "Il manque encore quelques éléments clés pour un prompt vraiment efficace.";
-  } else if (ratio <= 0.8){
+  } else if (ratio < SEUIL_PRET){
     couleur = 'var(--blue)';
     msg = 'Bon prompt'; sousMsg = "Encore un ou deux ajustements pour viser l'excellence.";
   } else {
     couleur = 'var(--green)';
-    msg = 'Prompt expert !'; sousMsg = "Ce prompt est prêt à être utilisé.";
+    msg = 'Prompt expert&nbsp;!'; sousMsg = "Ce prompt est prêt à être utilisé.";
   }
 
   let html = '';
   html += '<div class="score-block">';
-  html += '<div class="score-circle" style="border-color:'+couleur+';color:'+couleur+'">'+score+'<small>/ '+maxScore+'</small></div>';
+  html += '<div class="score-circle" style="border-color:'+couleur+';color:'+couleur+'">'+score+'<small>/&nbsp;'+maxScore+'</small></div>';
   html += '<div><div class="score-msg" style="color:'+couleur+'">'+msg+'</div><div class="score-sub">'+sousMsg+'</div></div>';
   html += '</div>';
 
   crits.forEach(c => {
     html += '<div class="criterion '+(c.ok ? 'ok' : 'ko')+'">';
-    html += '<div class="crit-icon">'+(c.ok ? '✓' : '!')+'</div>';
+    html += '<div class="crit-icon" aria-hidden="true">'+(c.ok ? '✓' : '!')+'</div>';
     html += '<div style="flex:1">';
     html += '<div class="crit-title">'+c.label+'</div>';
     if (!c.ok){
@@ -950,13 +1022,13 @@ function afficherResultats(){
     html += '</div>';
   });
 
-  if (ratio >= 0.85){
+  if (ratio >= SEUIL_PRET){
     html += '<div class="success-box">';
     html += '<h3>Votre prompt est prêt&nbsp;!</h3>';
     html += '<p>Copiez-le et testez-le directement dans l\'outil de votre choix.</p>';
     html += '<div class="launch-row">';
-    html += '<button onclick="copierPrompt()">Copier le prompt</button>';
-    html += '<button onclick="copierBilan()">Copier mon bilan</button>';
+    html += '<button type="button" onclick="copierPrompt()">Copier le prompt</button>';
+    html += '<button type="button" onclick="copierBilan()">Copier mon bilan</button>';
     LAUNCH_LINKS[modeActuel].forEach(l => {
       html += '<a href="'+l.url+'" target="_blank" rel="noopener">'+l.label+'</a>';
     });
@@ -968,8 +1040,8 @@ function afficherResultats(){
       html += '<div class="compare-box">';
       html += '<h3>Votre progression</h3>';
       html += '<div class="compare-cols">';
-      html += '<div class="compare-col"><div class="compare-label">Essai 1 · '+premier.score+'/'+maxScore+'</div><div class="compare-text">« '+premier.prompt+' »</div></div>';
-      html += '<div class="compare-col"><div class="compare-label">Essai '+dernier.n+' · '+dernier.score+'/'+maxScore+'</div><div class="compare-text">« '+dernier.prompt+' »</div></div>';
+      html += '<div class="compare-col"><div class="compare-label">Essai 1 · '+premier.score+'/'+maxScore+'</div><div class="compare-text">«&nbsp;'+esc(premier.prompt)+'&nbsp;»</div></div>';
+      html += '<div class="compare-col"><div class="compare-label">Essai '+dernier.n+' · '+dernier.score+'/'+maxScore+'</div><div class="compare-text">«&nbsp;'+esc(dernier.prompt)+'&nbsp;»</div></div>';
       html += '</div></div>';
     }
   }
@@ -993,33 +1065,56 @@ function afficherHistorique(){
   document.getElementById('historyList').innerHTML = html;
 }
 
+function copierTexte(texte, messageOk){
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texte).then(() => alert(messageOk), () => secoursCopie(texte, messageOk));
+  } else {
+    secoursCopie(texte, messageOk);
+  }
+}
+
+function secoursCopie(texte, messageOk){
+  const zone = document.createElement('textarea');
+  zone.value = texte;
+  document.body.appendChild(zone);
+  zone.select();
+  let ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(zone);
+  alert(ok ? messageOk : 'La copie automatique a échoué. Sélectionnez le texte et copiez-le à la main.');
+}
+
 function copierPrompt(){
-  navigator.clipboard.writeText(promptInput.value).then(() => {
-    alert('Prompt copié dans le presse-papiers !');
-  });
+  copierTexte(promptInput.value, 'Prompt copié dans le presse-papiers' + NBSP + '!');
 }
 
 function copierBilan(){
   if (attempts.length === 0) return;
   const maxScore = totalPoints(modeActuel);
   const dernier = attempts[attempts.length - 1];
+  const manquants = evaluer(dernier.prompt, modeActuel).filter(c => !c.ok).map(c => c.label);
   let bilan = 'Bilan – Entraîneur de prompt (mode ' + MODE_LABEL[modeActuel] + ')\n';
-  bilan += "Nombre d'essais : " + attempts.length + '\n';
-  bilan += 'Score final : ' + dernier.score + '/' + maxScore + '\n\n';
-  bilan += 'Prompt final :\n« ' + dernier.prompt + ' »';
-  navigator.clipboard.writeText(bilan).then(() => {
-    alert('Bilan copié dans le presse-papiers !');
-  });
+  bilan += "Nombre d'essais" + NBSP + ': ' + attempts.length + '\n';
+  bilan += 'Progression' + NBSP + ': ' + attempts.map(a => a.score).join(' → ') + ' (sur ' + maxScore + ')\n';
+  bilan += 'Score final' + NBSP + ': ' + dernier.score + '/' + maxScore + '\n';
+  if (manquants.length) bilan += 'Critères encore absents' + NBSP + ': ' + manquants.join(', ') + '\n';
+  bilan += '\nPrompt final' + NBSP + ':\n«' + NBSP + dernier.prompt + NBSP + '»';
+  copierTexte(bilan, 'Bilan copié dans le presse-papiers' + NBSP + '!');
+}
+
+function remettreAZero(){
+  promptInput.value = '';
+  attempts = [];
+  document.getElementById('wordCount').textContent = '0' + NBSP + 'mot';
+  document.getElementById('attemptCount').textContent = 'Essai n°' + NBSP + '1';
+  document.getElementById('resultZone').innerHTML = MSG_VIDE;
+  document.getElementById('historyBlock').style.display = 'none';
+  document.getElementById('historyList').innerHTML = '';
 }
 
 function reinitialiser(){
-  promptInput.value = '';
-  attempts = [];
-  document.getElementById('wordCount').textContent = '0 mot';
-  document.getElementById('attemptCount').textContent = 'Essai n° 1';
-  document.getElementById('resultZone').innerHTML = '<div class="empty-state">Rédigez un prompt à gauche, puis cliquez sur « Analyser mon prompt » pour voir le détail.</div>';
-  document.getElementById('historyBlock').style.display = 'none';
-  document.getElementById('historyList').innerHTML = '';
+  if (travailEnCours() && !confirm('Effacer la consigne en cours et la progression de cette séance' + NBSP + '?')) return;
+  remettreAZero();
 }
 
 populateDefis('texte');
