@@ -312,6 +312,11 @@
     margin-top:1px;
   }
   .ok .crit-icon{background:var(--green);}
+  .bonus .crit-icon{background:var(--blue);}
+  .bonus-titre{font-size:0.78rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; margin:16px 0 2px;}
+  .critique-box{margin-top:18px; padding:14px 16px; border:1px solid var(--blue); border-radius:10px; background:var(--blue-light);}
+  .critique-box h3{font-size:0.95rem; margin:0 0 6px;}
+  .critique-box p{font-size:0.85rem; margin:0 0 10px; color:var(--muted);}
   .ko .crit-icon{background:var(--red);}
   .crit-title{
     font-size:0.9rem;
@@ -590,7 +595,7 @@ const CRITERES = {
 
   texte: [
     {
-      id: 'role', label: "Rôle attribué à l'IA", points: 3,
+      id: 'role', label: "Rôle attribué à l'IA", points: 2,
       test: (t) => R(/tu es|vous êtes|rôle\s*:|agis (comme|en tant que|en)|agissez (comme|en tant que|en)|joue(z)? le rôle|endosse(z)? le rôle|incarne(z)?|mets-toi dans la peau|mettez-vous dans la peau|dans le rôle d(e|')|en tant qu(e|')|comporte-toi comme|imagine que tu es|imaginez que vous êtes/.source).test(t),
       tip: "Dites à l'IA quel rôle jouer&nbsp;: expert, formateur, rédacteur, conseiller… Elle adapte alors son vocabulaire et son niveau d'exigence.",
       exemple: "« Tu es un responsable marketing expérimenté dans la cosmétique bio. »"
@@ -602,13 +607,13 @@ const CRITERES = {
       exemple: "Plutôt que «&nbsp;le climat&nbsp;» → «&nbsp;Explique en 200&nbsp;mots les causes du réchauffement climatique&nbsp;»."
     },
     {
-      id: 'longueur', label: "Longueur suffisante", points: 2,
+      id: 'longueur', label: "Longueur suffisante", points: 1,
       test: (t) => nbMots(t) >= 15,
       tip: "Un prompt trop court oblige l'IA à deviner beaucoup d'éléments. Visez au moins 15&nbsp;mots.",
       exemple: "«&nbsp;Écris un poème&nbsp;» → «&nbsp;Écris un poème de 8&nbsp;vers sur l'automne, dans un style mélancolique, pour un public adulte&nbsp;»."
     },
     {
-      id: 'contexte', label: "Contexte ou situation précisée", points: 3,
+      id: 'contexte', label: "Contexte ou situation précisée", points: 4,
       test: (t) => R(/contexte|je suis|nous sommes|je travaille|nous travaillons|dans le cadre d(e|')|actuellement|situation|il s'agit d(e|')|mon entreprise|notre entreprise|ma société|notre société|mon projet|notre projet|mon objectif|notre objectif|l'objectif est|afin d(e|')|dans le but d(e|')|je prépare|nous préparons|je dois|nous devons|je cherche|nous cherchons|j'hésite|je souhaite|nous souhaitons|je rédige|je gère|je dirige|j'anime|j'enseigne|voici|ci-dessous|ci-dessus|ci-joint(e|s)?|je (te |vous )?joins|texte suivant|document suivant|à partir d(e|u|es|'un|'une)|d'après (ce|cette|le|la|les)/.source).test(t),
       tip: "Donnez le contexte&nbsp;: qui vous êtes, dans quelle situation, pour quel projet ou quel objectif.",
       exemple: "«&nbsp;Je suis formateur en marketing digital et je prépare un atelier pour des étudiants de BTS…&nbsp;»"
@@ -632,17 +637,48 @@ const CRITERES = {
       exemple: "«&nbsp;… avec un ton chaleureux et accessible, sans jargon technique&nbsp;»."
     },
     {
-      id: 'contrainte', label: "Contrainte quantifiée", points: 3,
+      id: 'contrainte', label: "Contrainte quantifiée", points: 2,
       test: (t) => R(/(\d+|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|douze|quinze|vingt|cent) ?(mots?|lignes?|phrases?|points?|exemples?|idées?|paragraphes?|minutes?|secondes?|caractères?|colonnes?|questions?|slides?|diapositives?|propositions?|parties|sections?|étapes?|arguments?|critères?|pages?|vers|puces?|titres?|%|améliorations?|conseils?|recommandations?|options?|rubriques?|actions?|solutions?|règles?|éléments?|erreurs?|axes?|pistes?|livres?|ans)/.source).test(t)
         || R(/maximum|minimum|au plus|au moins|pas plus d(e|')|moins d(e|')|plus d(e|')/.source).test(t) && /\d/.test(t),
       tip: "Ajoutez une quantité précise&nbsp;: nombre de mots, de lignes, d'exemples, de minutes…",
       exemple: "«&nbsp;… en 150&nbsp;mots maximum&nbsp;» ou «&nbsp;… en trois points&nbsp;»."
     },
     {
-      id: 'vague', label: "Absence de formulations vagues", points: 2,
+      id: 'vague', label: "Absence de formulations vagues", points: 1,
       test: (t) => !RE_VAGUE_TEXTE.test(t),
       tip: "Évitez les formulations floues comme «&nbsp;quelque chose sur…&nbsp;» ou «&nbsp;un peu de…&nbsp;» qui n'orientent pas l'IA.",
       exemple: "Remplacez «&nbsp;écris quelque chose sur le café&nbsp;» par «&nbsp;écris un texte de 100&nbsp;mots sur l'histoire du café en Éthiopie&nbsp;»."
+    },
+    // Critères « pour aller plus loin » : ils ajoutent des points mais ne sont pas obligatoires (la note reste plafonnée au total de base)
+    {
+      id: 'donnees', bonus: true, label: "Document ou données fournis", points: 2,
+      test: (t) => R(/voici|ci-dessous|ci-dessus|ci-joint(e|s)?|je (te |vous )?joins|texte suivant|document suivant|données suivantes|extrait suivant|à partir d(e|u|es|'un|'une)|en t'appuyant sur|en vous appuyant sur/.source).test(t),
+      tip: "Fournissez la matière à travailler (texte, chiffres, notes) plutôt que de laisser l'IA la deviner&nbsp;: elle invente moins.",
+      exemple: "«&nbsp;Voici le compte rendu de la réunion ci-dessous. Résume-le en cinq points.&nbsp;»"
+    },
+    {
+      id: 'exemple', bonus: true, label: "Exemple de résultat attendu", points: 1,
+      test: (t) => R(/par exemple|exemple\s*:|ex\s*:|sur le modèle d(e|u|'un|'une)|comme dans l'exemple|dans le style de l'exemple/.source).test(t),
+      tip: "Montrez un exemple du résultat attendu&nbsp;: l'IA s'aligne beaucoup mieux sur un modèle que sur une description.",
+      exemple: "«&nbsp;… par exemple&nbsp;: «&nbsp;Bonjour Léa, voici le point de la semaine…&nbsp;»&nbsp;»"
+    },
+    {
+      id: 'etapes', bonus: true, label: "Étapes de raisonnement demandées", points: 1,
+      test: (t) => R(/étape par étape|d'abord|dans un premier temps|ensuite|puis|en (deux|trois|quatre|cinq) étapes|commence par/.source).test(t),
+      tip: "Pour une tâche complexe, demandez de procéder par étapes&nbsp;: analyser, puis proposer, puis vérifier.",
+      exemple: "«&nbsp;Commence par résumer le texte, puis liste ses faiblesses, puis propose une version corrigée.&nbsp;»"
+    },
+    {
+      id: 'interdits', bonus: true, label: "Ce qu'il ne faut pas faire", points: 1,
+      test: (t) => R(/ne (pas|jamais)|n'(utilise|invente|ajoute|écris|emploie)[a-z]* pas|évite(z)?|sans (jargon|anglicismes?|exagération|répétition)|interdit/.source).test(t),
+      tip: "Dites aussi ce que vous ne voulez pas&nbsp;: jargon, exemples inventés, ton trop familier…",
+      exemple: "«&nbsp;N'invente aucune source et évite le jargon.&nbsp;»"
+    },
+    {
+      id: 'verification', bonus: true, label: "Vérification demandée", points: 1,
+      test: (t) => R(/cite(z)? (tes|vos|les) sources|indique(z)? (tes|vos|les) sources|dis-moi si tu n'es pas sûr|signale(z)? (les|tout)|niveau de confiance|vérifie(z)?|si tu ne sais pas|si vous ne savez pas/.source).test(t),
+      tip: "Demandez à l'IA de citer ses sources ou de signaler ce dont elle n'est pas sûre&nbsp;: vous saurez quoi vérifier.",
+      exemple: "«&nbsp;Cite tes sources et dis-moi si tu n'es pas sûr d'un chiffre.&nbsp;»"
     }
   ],
 
@@ -807,7 +843,7 @@ const EXEMPLES = {
 const MSG_VIDE = '<div class="empty-state">Rédigez un prompt à gauche, puis cliquez sur «&nbsp;Analyser mon prompt&nbsp;» pour voir le détail.</div>';
 
 function totalPoints(mode){
-  return CRITERES[mode].reduce((s,c) => s + c.points, 0);
+  return CRITERES[mode].filter(c => !c.bonus).reduce((s,c) => s + c.points, 0);
 }
 
 // Mots qui nomment un critère : une suite de trois d'entre eux sans phrase autour est du bourrage
@@ -855,8 +891,9 @@ function evaluer(texte, mode){
 
 // Note d'une analyse : somme des critères réussis, plafonnée à 35 % en cas de bourrage
 function scoreDe(crits, mode){
-  const somme = crits.reduce((s,c) => s + (c.ok ? c.points : 0), 0);
-  return crits.some(c => c.plafond) ? Math.min(somme, Math.floor(0.35 * totalPoints(mode))) : somme;
+  const max = totalPoints(mode);
+  const somme = Math.min(max, crits.reduce((s,c) => s + (c.ok ? c.points : 0), 0));
+  return crits.some(c => c.plafond) ? Math.min(somme, Math.floor(0.35 * max)) : somme;
 }
 
 const promptInput = document.getElementById('promptInput');
@@ -1050,21 +1087,34 @@ function afficherResultats(){
   html += '<div><div class="score-msg" style="color:'+couleur+'">'+msg+'</div><div class="score-sub">'+sousMsg+'</div></div>';
   html += '</div>';
 
-  crits.forEach(c => {
-    html += '<div class="criterion '+(c.ok ? 'ok' : 'ko')+'">';
-    html += '<div class="crit-icon" aria-hidden="true">'+(c.ok ? '✓' : '!')+'</div>';
-    html += '<div style="flex:1">';
-    html += '<div class="crit-title">'+c.label+'</div>';
+  const ligne = c => {
+    const classe = c.ok ? 'ok' : (c.bonus ? 'bonus' : 'ko');
+    let h = '<div class="criterion '+classe+'">';
+    h += '<div class="crit-icon" aria-hidden="true">'+(c.ok ? '✓' : (c.bonus ? '+' : '!'))+'</div>';
+    h += '<div style="flex:1">';
+    h += '<div class="crit-title">'+c.label+'</div>';
     if (!c.ok){
-      html += '<div class="crit-tip">'+c.tip+'</div>';
+      h += '<div class="crit-tip">'+c.tip+'</div>';
       if (toggleExemples){
-        html += '<div class="crit-tip" style="margin-top:4px"><b>Exemple&nbsp;:</b> '+c.exemple+'</div>';
+        h += '<div class="crit-tip" style="margin-top:4px"><b>Exemple&nbsp;:</b> '+c.exemple+'</div>';
       }
     }
-    html += '</div>';
-    html += '<div class="crit-points">'+(c.plafond ? 'plafond' : (c.ok ? '+' : '0/')+c.points)+'</div>';
-    html += '</div>';
-  });
+    h += '</div>';
+    h += '<div class="crit-points">'+(c.plafond ? 'plafond' : (c.ok ? '+' : (c.bonus ? '+' : '0/'))+c.points)+'</div>';
+    return h + '</div>';
+  };
+  crits.filter(c => !c.bonus).forEach(c => { html += ligne(c); });
+  const bonus = crits.filter(c => c.bonus);
+  if (bonus.length){
+    html += '<div class="bonus-titre">Pour aller plus loin (points en plus, jamais obligatoires)</div>';
+    bonus.forEach(c => { html += ligne(c); });
+  }
+
+  html += '<div class="critique-box">';
+  html += '<h3>Un second avis, par Claude</h3>';
+  html += '<p>L\'outil vérifie la présence d\'éléments&nbsp;; il ne juge pas si votre consigne est claire. Copiez la consigne de relecture, collez-la dans Claude, puis revenez corriger. Ne collez jamais de données personnelles ou confidentielles.</p>';
+  html += '<button type="button" onclick="copierRelecture()">Faire critiquer par Claude</button>';
+  html += '</div>';
 
   if (ratio >= SEUIL_PRET){
     html += '<div class="success-box">';
@@ -1107,6 +1157,30 @@ function afficherHistorique(){
     html += '</div>';
   });
   document.getElementById('historyList').innerHTML = html;
+}
+
+const CIBLE_RELECTURE = {
+  texte: {pour: "une IA générative de texte", comprise: "ce que tu comprends qu'elle demande", amelioree: "Propose une version améliorée"},
+  image: {pour: "un générateur d'images", comprise: "l'image que tu imagines en la lisant", amelioree: "Propose une version améliorée (sujet, style, cadrage, lumière, couleurs, format)"},
+  video: {pour: "un générateur de vidéos", comprise: "la vidéo que tu imagines en la lisant", amelioree: "Propose une version améliorée (sujet, action, mouvement de caméra, durée, lumière, format)"}
+};
+
+// Consigne à coller dans Claude : elle demande une critique et interdit d'exécuter la consigne de l'étudiant
+function consigneRelecture(texte, mode){
+  const c = CIBLE_RELECTURE[mode];
+  return "Tu es un formateur expérimenté en rédaction de consignes pour l'IA. Voici une consigne écrite par un étudiant pour " + c.pour + ". "
+    + "N'exécute pas cette consigne" + NBSP + ": critique-la.\n\n"
+    + "1. Dis en deux phrases " + c.comprise + ".\n"
+    + "2. Liste ce qui est ambigu, manquant ou contradictoire.\n"
+    + "3. " + c.amelioree + ", sans inventer de faits.\n"
+    + "4. Donne une note sur 10 et une phrase pour la justifier.\n\n"
+    + "Consigne de l'étudiant" + NBSP + ":\n<<<\n" + texte.trim() + "\n>>>";
+}
+
+function copierRelecture(){
+  if (attempts.length === 0) return;
+  copierTexte(consigneRelecture(attempts[attempts.length - 1].prompt, modeActuel),
+    "Consigne de relecture copiée. Collez-la dans Claude (ou dans l'IA de votre choix) pour obtenir un second avis.");
 }
 
 function copierTexte(texte, messageOk){
