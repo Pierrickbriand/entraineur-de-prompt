@@ -591,7 +591,7 @@ const CRITERES = {
   texte: [
     {
       id: 'role', label: "Rôle attribué à l'IA", points: 3,
-      test: (t) => R(/tu es|vous êtes|agis (comme|en tant que|en)|agissez (comme|en tant que|en)|joue(z)? le rôle|endosse(z)? le rôle|incarne(z)?|mets-toi dans la peau|mettez-vous dans la peau|dans le rôle d(e|')|en tant qu(e|')|comporte-toi comme|imagine que tu es|imaginez que vous êtes/.source).test(t),
+      test: (t) => R(/tu es|vous êtes|rôle\s*:|agis (comme|en tant que|en)|agissez (comme|en tant que|en)|joue(z)? le rôle|endosse(z)? le rôle|incarne(z)?|mets-toi dans la peau|mettez-vous dans la peau|dans le rôle d(e|')|en tant qu(e|')|comporte-toi comme|imagine que tu es|imaginez que vous êtes/.source).test(t),
       tip: "Dites à l'IA quel rôle jouer&nbsp;: expert, formateur, rédacteur, conseiller… Elle adapte alors son vocabulaire et son niveau d'exigence.",
       exemple: "« Tu es un responsable marketing expérimenté dans la cosmétique bio. »"
     },
@@ -609,13 +609,13 @@ const CRITERES = {
     },
     {
       id: 'contexte', label: "Contexte ou situation précisée", points: 3,
-      test: (t) => R(/contexte|je suis|nous sommes|je travaille|nous travaillons|dans le cadre d(e|')|actuellement|situation|il s'agit d(e|')|mon entreprise|notre entreprise|ma société|notre société|mon projet|notre projet|mon objectif|notre objectif|l'objectif est|afin d(e|')|dans le but d(e|')|je prépare|nous préparons|je dois|nous devons/.source).test(t),
+      test: (t) => R(/contexte|je suis|nous sommes|je travaille|nous travaillons|dans le cadre d(e|')|actuellement|situation|il s'agit d(e|')|mon entreprise|notre entreprise|ma société|notre société|mon projet|notre projet|mon objectif|notre objectif|l'objectif est|afin d(e|')|dans le but d(e|')|je prépare|nous préparons|je dois|nous devons|je cherche|nous cherchons|j'hésite|je souhaite|nous souhaitons|je rédige|je gère|je dirige|j'anime|j'enseigne|voici|ci-dessous|ci-dessus|ci-joint(e|s)?|je (te |vous )?joins|texte suivant|document suivant|à partir d(e|u|es|'un|'une)|d'après (ce|cette|le|la|les)/.source).test(t),
       tip: "Donnez le contexte&nbsp;: qui vous êtes, dans quelle situation, pour quel projet ou quel objectif.",
       exemple: "«&nbsp;Je suis formateur en marketing digital et je prépare un atelier pour des étudiants de BTS…&nbsp;»"
     },
     {
       id: 'format', label: "Format de sortie attendu", points: 3,
-      test: (t) => R(/format|sous (la )?forme d(e|')|tableaux?|listes?|paragraphes?|mots|lignes|sections?|plan|e-?mails?|courriels?|articles?|résumé|puces?|slides?|diapositives?|tweet|posts?|publication|fiche|script|questionnaire|grille/.source).test(t),
+      test: (t) => R(/format|sous (la )?forme d(e|')|tableaux?|listes?|paragraphes?|mots|lignes|sections?|plan|e-?mails?|courriels?|articles?|résumé|puces?|slides?|diapositives?|tweet|posts?|publication|fiche|script|questionnaire|grille|poèmes?|haïkus?|sonnets?|histoires?|dialogues?|discours|lettres?|synthèse|quiz|numérotée?s?|à puces|en (\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix) (points?|lignes?|phrases?|paragraphes?|parties|étapes?)/.source).test(t),
       tip: "Précisez la forme attendue&nbsp;: tableau, liste à puces, e-mail, paragraphe, nombre de mots…",
       exemple: "«&nbsp;Présente le résultat sous forme de tableau à trois colonnes&nbsp;»."
     },
@@ -627,13 +627,13 @@ const CRITERES = {
     },
     {
       id: 'ton', label: "Ton ou style souhaité", points: 2,
-      test: (t) => R(/(un|le|ce|au|d'un|du) ton|ton (formel|informel|neutre|professionnel|chaleureux|direct|léger|sérieux)|style|registre|formel(le)?|informel(le)?|professionnel(le)?|humoristique|académique|chaleureux|chaleureuse|neutre|sérieux|sérieuse|convivial(e)?|décontracté(e)?|pédagogique|bienveillant(e)?|direct(e)?|sobre|persuasi(f|ve)|engageant(e)?/.source).test(t),
+      test: (t) => R(/(un|le|ce|au|d'un|du) ton|ton (formel|informel|neutre|professionnel|chaleureux|direct|léger|sérieux)|style|registre|formel(le)?|informel(le)?|professionnel(le)?|humoristique|académique|chaleureux|chaleureuse|neutre|sérieux|sérieuse|convivial(e)?|décontracté(e)?|pédagogique|bienveillant(e)?|direct(e)?|sobre|persuasi(f|ve)|engageant(e)?|sans jargon|vocabulaire (simple|clair|accessible|courant)|simple(s)? et (clair|direct|accessible)|accessible|encourageant(e)?|enjoué(e)?|factuel(le)?|clair(e)?s?/.source).test(t),
       tip: "Précisez le ton attendu&nbsp;: formel, chaleureux, humoristique, académique…",
       exemple: "«&nbsp;… avec un ton chaleureux et accessible, sans jargon technique&nbsp;»."
     },
     {
       id: 'contrainte', label: "Contrainte quantifiée", points: 3,
-      test: (t) => R(/(\d+|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|douze|quinze|vingt|cent) ?(mots?|lignes?|phrases?|points?|exemples?|idées?|paragraphes?|minutes?|secondes?|caractères?|colonnes?|questions?|slides?|diapositives?|propositions?|parties|sections?|étapes?|arguments?|critères?|pages?|vers|puces?|titres?|%)/.source).test(t)
+      test: (t) => R(/(\d+|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|douze|quinze|vingt|cent) ?(mots?|lignes?|phrases?|points?|exemples?|idées?|paragraphes?|minutes?|secondes?|caractères?|colonnes?|questions?|slides?|diapositives?|propositions?|parties|sections?|étapes?|arguments?|critères?|pages?|vers|puces?|titres?|%|améliorations?|conseils?|recommandations?|options?|rubriques?|actions?|solutions?|règles?|éléments?|erreurs?|axes?|pistes?|livres?|ans)/.source).test(t)
         || R(/maximum|minimum|au plus|au moins|pas plus d(e|')|moins d(e|')|plus d(e|')/.source).test(t) && /\d/.test(t),
       tip: "Ajoutez une quantité précise&nbsp;: nombre de mots, de lignes, d'exemples, de minutes…",
       exemple: "«&nbsp;… en 150&nbsp;mots maximum&nbsp;» ou «&nbsp;… en trois points&nbsp;»."
@@ -810,9 +810,53 @@ function totalPoints(mode){
   return CRITERES[mode].reduce((s,c) => s + c.points, 0);
 }
 
+// Mots qui nomment un critère : une suite de trois d'entre eux sans phrase autour est du bourrage
+const MOTS_CLES = new Set(('liste listes plan article articles tableau format ton style contexte public rôle role exemple exemples '
+  + 'clients client expert formel informel professionnel mots slides paragraphe paragraphes email e-mail projet entreprise '
+  + 'débutants étudiants enfants académique humoristique chaleureux').split(' '));
+const TONS = /humoristique|formel|informel|académique|chaleureux|sérieux|léger|neutre|décontracté/g;
+
+// Repère une consigne qui empile des mots-clés ou se contredit : les critères s'y trouvent sans que l'IA sache quoi faire
+function bourrage(t){
+  // 1. trois mots-clés de suite dans un même morceau de phrase
+  const morceau = t.toLowerCase().split(/[.,;:!?\n()]+/).some(m => {
+    let suite = 0;
+    for (const w of m.split(/\s+/).filter(Boolean)){
+      suite = MOTS_CLES.has(w) ? suite + 1 : 0;
+      if (suite >= 3) return true;
+    }
+    return false;
+  });
+  if (morceau) return true;
+  // 2. des fragments de trois mots ou moins, sans « Étiquette : valeur », qui forment au moins la moitié du texte
+  const phrases = t.split(/[.!?\n]+/).map(x => x.trim()).filter(Boolean);
+  const fragments = phrases.filter(x => nbMots(x) <= 3 && !x.includes(':'));
+  if (fragments.length >= 3 && fragments.length * 2 >= phrases.length) return true;
+  // 3. trois tons différents demandés en même temps
+  if (new Set((t.toLowerCase().match(TONS) || [])).size >= 3) return true;
+  // 4. un minimum plus grand que le maximum
+  const mx = /maximum\s+(\d+)/i.exec(t), mn = /minimum\s+(\d+)/i.exec(t);
+  return !!(mx && mn && +mn[1] > +mx[1]);
+}
+
+const CRITERE_PHRASES = {
+  id: 'phrases', plafond: true, points: 0,
+  label: "Des phrases claires, pas une accumulation de mots-clés",
+  tip: "Cette consigne ressemble à une liste de mots-clés ou se contredit. L'IA ne saura pas quoi en faire&nbsp;: la note est plafonnée. Écrivez des phrases complètes, qui disent une chose à la fois.",
+  exemple: "«&nbsp;Rédige un e-mail de 120&nbsp;mots pour nos clients, sur un ton chaleureux.&nbsp;»"
+};
+
 function evaluer(texte, mode){
   const t = normaliser(texte);
-  return CRITERES[mode].map(c => ({...c, ok: c.test(t)}));
+  const crits = CRITERES[mode].map(c => ({...c, ok: c.test(t)}));
+  if (mode === 'texte' && bourrage(t)) crits.push({...CRITERE_PHRASES, ok: false});
+  return crits;
+}
+
+// Note d'une analyse : somme des critères réussis, plafonnée à 35 % en cas de bourrage
+function scoreDe(crits, mode){
+  const somme = crits.reduce((s,c) => s + (c.ok ? c.points : 0), 0);
+  return crits.some(c => c.plafond) ? Math.min(somme, Math.floor(0.35 * totalPoints(mode))) : somme;
 }
 
 const promptInput = document.getElementById('promptInput');
@@ -964,7 +1008,7 @@ function analyser(){
   }
 
   const crits = evaluer(texte, modeActuel);
-  const score = crits.reduce((s,c) => s + (c.ok ? c.points : 0), 0);
+  const score = scoreDe(crits, modeActuel);
   const maxScore = totalPoints(modeActuel);
 
   attempts.push({n: attempts.length + 1, score, prompt: texte});
@@ -982,7 +1026,7 @@ function afficherResultats(){
   const texteAnalyse = attempts[attempts.length - 1].prompt;
   const maxScore = totalPoints(modeActuel);
   const crits = evaluer(texteAnalyse, modeActuel);
-  const score = crits.reduce((s,c) => s + (c.ok ? c.points : 0), 0);
+  const score = scoreDe(crits, modeActuel);
 
   let couleur, msg, sousMsg;
   const ratio = score / maxScore;
@@ -1018,7 +1062,7 @@ function afficherResultats(){
       }
     }
     html += '</div>';
-    html += '<div class="crit-points">'+(c.ok ? '+' : '0/')+c.points+'</div>';
+    html += '<div class="crit-points">'+(c.plafond ? 'plafond' : (c.ok ? '+' : '0/')+c.points)+'</div>';
     html += '</div>';
   });
 

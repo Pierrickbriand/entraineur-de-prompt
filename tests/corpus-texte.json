@@ -1,0 +1,201 @@
+[
+ {
+  "id": "B01",
+  "attendu": "pret",
+  "t": "Tu es un responsable marketing expérimenté dans la cosmétique bio. Je prépare un atelier pour des étudiants de BTS dans le cadre de mon cours. Rédige un e-mail de 150 mots, avec un ton chaleureux, qui présente le programme de la semaine."
+ },
+ {
+  "id": "B02",
+  "attendu": "pret",
+  "t": "Je suis formateur en marketing digital et je prépare une séance pour des étudiants de licence. Propose trois exercices de 20 minutes sur le référencement naturel, sous forme de tableau avec une colonne consigne et une colonne durée, dans un ton simple et direct."
+ },
+ {
+  "id": "B03",
+  "attendu": "pret",
+  "t": "Tu es conseiller en gestion de patrimoine. Un client débutant de 35 ans hésite entre un livret et une assurance-vie. Compare les deux options en cinq lignes, sous forme de liste à puces, avec un vocabulaire sans jargon."
+ },
+ {
+  "id": "B04",
+  "attendu": "pret",
+  "t": "Agis comme un recruteur en ressources humaines. Voici ma lettre de motivation ci-dessous pour un poste d'assistant commercial. Analyse-la et propose trois améliorations précises, présentées en liste numérotée, pour un public de recruteurs pressés."
+ },
+ {
+  "id": "B05",
+  "attendu": "pret",
+  "t": "Dans le cadre de mon projet de mémoire sur la fidélisation client, je cherche des idées. Génère cinq questions d'entretien destinées à des responsables de magasin, formulées dans un style neutre et professionnel, en une phrase chacune."
+ },
+ {
+  "id": "B06",
+  "attendu": "pret",
+  "t": "Tu es professeur de mathématiques. Explique à des élèves de troisième, en 200 mots maximum, ce qu'est une moyenne pondérée, avec un exemple chiffré, sous forme de deux paragraphes et un ton encourageant."
+ },
+ {
+  "id": "B07",
+  "attendu": "pret",
+  "t": "Rôle : consultant en stratégie. Contexte : une PME de 20 salariés qui lance une gamme bio. Tâche : rédige un plan de lancement. Public : le comité de direction. Format : tableau de cinq lignes. Ton : factuel."
+ },
+ {
+  "id": "M01",
+  "attendu": "moyen",
+  "t": "Écris un poème de 8 vers sur l'automne, dans un style mélancolique, pour un public adulte."
+ },
+ {
+  "id": "M02",
+  "attendu": "moyen",
+  "t": "Résume ce texte en trois points pour un directeur pressé. Je joins le rapport annuel ci-dessous."
+ },
+ {
+  "id": "M03",
+  "attendu": "moyen",
+  "t": "Rédige un e-mail professionnel pour demander un rendez-vous à un client, en cent mots maximum."
+ },
+ {
+  "id": "M04",
+  "attendu": "moyen",
+  "t": "Explique-moi la différence entre marketing et communication pour des étudiants débutants, avec un exemple concret."
+ },
+ {
+  "id": "M05",
+  "attendu": "moyen",
+  "t": "Tu es expert en finance. Compare l'action et l'obligation pour un investisseur débutant."
+ },
+ {
+  "id": "M06",
+  "attendu": "moyen",
+  "t": "Je prépare un cours sur la gestion de projet. Propose un plan en quatre parties pour une séance de trois heures."
+ },
+ {
+  "id": "M07",
+  "attendu": "moyen",
+  "t": "Traduis ce paragraphe en anglais professionnel pour un site internet destiné à des clients européens."
+ },
+ {
+  "id": "M08",
+  "attendu": "moyen",
+  "t": "Crée un quiz de cinq questions sur la Révolution française pour des élèves de quatrième, avec les réponses à la fin."
+ },
+ {
+  "id": "F01",
+  "attendu": "faible",
+  "t": "Parle-moi du marketing."
+ },
+ {
+  "id": "F02",
+  "attendu": "faible",
+  "t": "Écris quelque chose sur le café."
+ },
+ {
+  "id": "F03",
+  "attendu": "faible",
+  "t": "Fais un truc sur l'IA pour mon cours."
+ },
+ {
+  "id": "F04",
+  "attendu": "faible",
+  "t": "Donne-moi des idées."
+ },
+ {
+  "id": "F05",
+  "attendu": "faible",
+  "t": "résumé du livre"
+ },
+ {
+  "id": "F06",
+  "attendu": "faible",
+  "t": "Je voudrais un texte sur le climat, un peu long, peu importe le style."
+ },
+ {
+  "id": "F07",
+  "attendu": "faible",
+  "t": "Aide-moi pour mon mémoire s'il te plaît, j'ai besoin de conseils."
+ },
+ {
+  "id": "F08",
+  "attendu": "faible",
+  "t": "Explique la blockchain."
+ },
+ {
+  "id": "F09",
+  "attendu": "faible",
+  "t": "Fais-moi une présentation."
+ },
+ {
+  "id": "F10",
+  "attendu": "faible",
+  "t": "Pourquoi les ventes baissent ? Réponds vite."
+ },
+ {
+  "id": "X01",
+  "attendu": "faible",
+  "bourre": true,
+  "t": "Tu es expert. Rédige un tableau pour des clients, ton professionnel, style formel, contexte : mon projet, en 5 mots maximum, liste plan article."
+ },
+ {
+  "id": "X02",
+  "attendu": "faible",
+  "bourre": true,
+  "t": "rôle expert contexte entreprise public clients format tableau ton formel 100 mots exemple liste plan e-mail"
+ },
+ {
+  "id": "X03",
+  "attendu": "faible",
+  "bourre": true,
+  "t": "Tu es un expert. Je suis une entreprise. Rédige pour des clients. Format tableau. Ton professionnel. 50 mots. Contexte projet. Public débutants."
+ },
+ {
+  "id": "X04",
+  "attendu": "faible",
+  "bourre": true,
+  "t": "Agis comme expert. Contexte : situation. Pour des étudiants et clients et enfants. Sous forme de liste, de tableau, de paragraphe, de slides. Style humoristique et formel et académique. Maximum 10 mots, minimum 500 mots."
+ },
+ {
+  "id": "A01",
+  "attendu": "pret",
+  "t": "Tu es un chargé de communication pour une médiathèque municipale. Notre projet est un cycle de lectures pour les 8-12 ans. Rédige une publication pour les réseaux sociaux de 60 mots maximum, destinée aux parents, avec un ton enjoué et un appel à l'inscription."
+ },
+ {
+  "id": "A02",
+  "attendu": "pret",
+  "t": "Je travaille dans une PME de menuiserie et nous cherchons de nouveaux clients. Propose trois idées de campagne pour des artisans du bâtiment, présentées sous forme de tableau avec le coût estimé, dans un ton professionnel."
+ },
+ {
+  "id": "A03",
+  "attendu": "moyen",
+  "t": "Écris une histoire courte pour enfants avec un dragon gentil, en deux paragraphes."
+ },
+ {
+  "id": "A04",
+  "attendu": "moyen",
+  "t": "Voici mon plan de séance ci-dessous. Corrige les fautes et reformule les phrases trop longues sans changer le sens."
+ },
+ {
+  "id": "A05",
+  "attendu": "moyen",
+  "t": "Imagine que tu es mon coach sportif. Prépare un programme de course à pied de huit semaines pour un débutant, avec trois séances par semaine."
+ },
+ {
+  "id": "A06",
+  "attendu": "faible",
+  "t": "Fais un programme de sport."
+ },
+ {
+  "id": "A07",
+  "attendu": "pret",
+  "t": "Tu es avocat en droit du travail. Mon entreprise compte douze salariés et je dois rédiger un règlement intérieur. Liste en huit points les rubriques obligatoires, sous forme de liste à puces, pour un dirigeant sans formation juridique, avec un ton clair et sans jargon."
+ },
+ {
+  "id": "A08",
+  "attendu": "moyen",
+  "t": "Compare Excel et Google Sheets pour un petit budget associatif, dans un tableau de dix lignes."
+ },
+ {
+  "id": "A09",
+  "attendu": "faible",
+  "t": "Dis-moi quoi acheter."
+ },
+ {
+  "id": "A10",
+  "attendu": "moyen",
+  "t": "Tu es traducteur. Traduis les phrases ci-dessous en espagnol, pour des touristes."
+ }
+]

@@ -1,0 +1,73 @@
+[
+ {
+  "id": "H01",
+  "attendu": "pret",
+  "t": "Tu es responsable des achats dans une entreprise de BTP. Nous devons choisir entre deux fournisseurs de béton. Compare-les en six critères, sous forme de tableau, pour un directeur financier non spécialiste, avec un ton factuel."
+ },
+ {
+  "id": "H02",
+  "attendu": "pret",
+  "t": "Je suis enseignant en lycée professionnel et je prépare un cours sur la sécurité au travail. Rédige un quiz de dix questions pour des élèves de seconde, avec les corrections à la fin, dans un style simple et clair."
+ },
+ {
+  "id": "H03",
+  "attendu": "pret",
+  "t": "Agis comme un journaliste économique. Voici le communiqué de presse ci-dessous. Rédige un article de 250 mots pour des lecteurs non spécialistes, avec un titre accrocheur et un ton neutre."
+ },
+ {
+  "id": "H04",
+  "attendu": "moyen",
+  "t": "Écris un article de blog sur le style professionnel en entreprise, pour des jeunes diplômés."
+ },
+ {
+  "id": "H05",
+  "attendu": "moyen",
+  "t": "Rédige une liste de clients potentiels pour un tableau de bord de suivi commercial."
+ },
+ {
+  "id": "H06",
+  "attendu": "moyen",
+  "t": "Je cherche des idées de cadeaux pour mon père qui aime le jardinage, budget de cinquante euros maximum."
+ },
+ {
+  "id": "H07",
+  "attendu": "moyen",
+  "t": "Corrige l'orthographe du texte ci-dessous sans modifier le style."
+ },
+ {
+  "id": "H08",
+  "attendu": "faible",
+  "t": "Donne-moi un conseil."
+ },
+ {
+  "id": "H09",
+  "attendu": "faible",
+  "t": "Fais-moi une synthèse de tout ça."
+ },
+ {
+  "id": "H10",
+  "attendu": "faible",
+  "t": "Je veux un truc sympa pour mon site."
+ },
+ {
+  "id": "H11",
+  "attendu": "faible",
+  "t": "marketing digital stratégie réseaux sociaux influenceurs budget"
+ },
+ {
+  "id": "H12",
+  "attendu": "faible",
+  "bourre": true,
+  "t": "Tu es un expert. Ton formel et ton humoristique et ton sérieux. Public clients. Format article. Contexte entreprise. Maximum 20 mots, minimum 300 mots."
+ },
+ {
+  "id": "H13",
+  "attendu": "pret",
+  "t": "Rôle : conseiller pédagogique. Contexte : un module de vente de 14 heures pour des adultes en reconversion. Tâche : propose un fil rouge en quatre étapes. Public : des formateurs débutants. Format : liste numérotée. Ton : direct."
+ },
+ {
+  "id": "H14",
+  "attendu": "moyen",
+  "t": "Tu es un coach de vie. Aide-moi à organiser ma semaine de travail."
+ }
+]
